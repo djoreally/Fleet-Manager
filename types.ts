@@ -36,6 +36,7 @@ export interface UserSettings {
   businessPhone?: string;
   logoImage?: string; // base64 encoded image
   userRole?: 'manager' | 'technician';
+  onboardingComplete?: boolean;
   updatedAt: number;
 }
 

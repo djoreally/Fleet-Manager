@@ -3,7 +3,12 @@ import { useUserSettings } from '../hooks/useUserSettings';
 import { localDB } from '../services/localDB';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 
-export const UserSettingsForm: React.FC = () => {
+interface UserSettingsFormProps {
+    onSaveSuccess?: () => void;
+    submitButtonText?: string;
+}
+
+export const UserSettingsForm: React.FC<UserSettingsFormProps> = ({ onSaveSuccess, submitButtonText }) => {
     const currentSettings = useUserSettings();
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
@@ -36,6 +41,7 @@ export const UserSettingsForm: React.FC = () => {
         setIsSaving(true);
         try {
             await localDB.userSettings.put({
+                ...currentSettings,
                 id: 1,
                 businessName: name,
                 businessAddress: address,
@@ -43,6 +49,7 @@ export const UserSettingsForm: React.FC = () => {
                 logoImage: logo,
                 updatedAt: Date.now(),
             });
+            onSaveSuccess?.();
         } catch (error) {
             console.error("Failed to save settings", error);
             alert("Failed to save settings.");
@@ -94,7 +101,7 @@ export const UserSettingsForm: React.FC = () => {
                     className="w-full flex justify-center items-center gap-2 px-4 py-2 rounded-md shadow-sm text-sm font-semibold text-text-inverted bg-accent hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isSaving && <SpinnerIcon className="w-5 h-5 animate-spin-slow" />}
-                    {isSaving ? 'Saving...' : 'Save Settings'}
+                    {isSaving ? 'Saving...' : (submitButtonText || 'Save Settings')}
                 </button>
             </form>
         </div>

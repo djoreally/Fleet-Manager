@@ -48,7 +48,25 @@ export const InspectionFormModal: React.FC<InspectionFormModalProps> = ({ vehicl
       },
       (error) => {
         console.error("Geolocation error:", error);
-        setLocation({ status: 'error', message: `Location error: ${error.message}` });
+        let errorMessage: string;
+        // GeolocationPositionError codes: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+        switch (error.code) {
+          case 1:
+            errorMessage = "Permission denied. Please enable location services in your browser settings.";
+            break;
+          case 2:
+            errorMessage = "Location information is unavailable at the moment.";
+            break;
+          case 3:
+            errorMessage = "The request to get your location timed out.";
+            break;
+          default:
+            errorMessage = (error && typeof error.message === 'string' && error.message)
+              ? error.message
+              : "An unknown error occurred.";
+            break;
+        }
+        setLocation({ status: 'error', message: `Location error: ${errorMessage}` });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );

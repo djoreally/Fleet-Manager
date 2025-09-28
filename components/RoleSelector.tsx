@@ -6,9 +6,8 @@ import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { WrenchIcon } from './icons/WrenchIcon';
 
 
-// FIX: The type for 'icon' was changed from React.ReactNode to React.ReactElement.
-// This provides a more accurate type, allowing React.cloneElement to correctly infer props and avoid type errors.
-const roles: { name: NonNullable<UserSettings['userRole']>; label: string; icon: React.ReactElement; }[] = [
+// FIX: The type for `icon` was too generic (`React.ReactElement`), causing TypeScript to fail to infer the element's props. By specifying `React.ReactElement<{ className?: string }>`, we provide the necessary type information for `React.cloneElement` to correctly validate the `className` prop, resolving the type error.
+const roles: { name: NonNullable<UserSettings['userRole']>; label: string; icon: React.ReactElement<{ className?: string }>; }[] = [
     { name: 'manager', label: 'Manager', icon: <BriefcaseIcon className="w-6 h-6" /> },
     { name: 'technician', label: 'Technician', icon: <WrenchIcon className="w-6 h-6" /> },
 ];

@@ -1,5 +1,5 @@
 {
-  "name": "Local-First Vehicle Fleet Manager",
+  "name": "Nspector",
   "description": "A demonstration of a local-first SaaS application using React, Dexie (IndexedDB), and Supabase for real-time cloud synchronization. Add and manage vehicles offline, then connect to sync with the cloud.",
   "requestFramePermissions": [
     "camera",

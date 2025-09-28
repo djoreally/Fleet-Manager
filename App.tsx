@@ -18,6 +18,7 @@ import { SendReportModal } from "./components/SendReportModal";
 import { AddEditInspectorModal } from "./components/AddEditInspectorModal";
 
 import { HomePage } from "./pages/HomePage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FleetPage } from "./pages/FleetPage";
 import { InspectionsPage } from "./pages/InspectionsPage";
@@ -113,6 +114,7 @@ function AppContent() {
                 businessPhone: "",
                 logoImage: "",
                 userRole: 'manager',
+                onboardingComplete: false,
                 updatedAt: Date.now(),
             });
         }
@@ -192,22 +194,26 @@ function AppContent() {
     };
     await localDB.customers.put(customerToSave);
   };
-  
-  const handleSaveInspector = async (inspectorData: Omit<Inspector, 'id' | 'updatedAt'>) => {
-    const inspectorToSave = {
-        id: editingInspector?.id || crypto.randomUUID(),
-        ...inspectorData,
-        updatedAt: Date.now(),
-    };
-    await localDB.inspectors.put(inspectorToSave);
-  };
 
   const handleContinueToApp = () => {
-      if (userRole === 'technician') {
-          setCurrentPage('fleet');
+      if (settings.onboardingComplete) {
+        if (userRole === 'technician') {
+            setCurrentPage('fleet');
+        } else {
+            setCurrentPage('dashboard');
+        }
       } else {
-          setCurrentPage('dashboard');
+          setCurrentPage('onboarding');
       }
+  };
+
+  const handleOnboardingComplete = async () => {
+    await localDB.userSettings.update(1, { onboardingComplete: true, updatedAt: Date.now() });
+    if (userRole === 'technician') {
+        setCurrentPage('fleet');
+    } else {
+        setCurrentPage('dashboard');
+    }
   };
 
   const renderPage = () => {
@@ -218,6 +224,8 @@ function AppContent() {
                         installPromptEvent={installPromptEvent}
                         onInstall={handleInstall}
                     />;
+        case 'onboarding':
+            return <OnboardingPage onComplete={handleOnboardingComplete} />;
         case 'dashboard':
             return <DashboardPage onVehicleAddedForInspection={handleVehicleAddedAndStartInspection} />;
         case 'fleet':
@@ -242,28 +250,38 @@ function AppContent() {
                     />;
     }
   };
+  
+  const isInsideApp = currentPage !== 'home' && currentPage !== 'onboarding';
 
   return (
     <div className="relative z-10 min-h-screen antialiased">
-      <Navigation 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage}
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-        userRole={userRole}
-      />
+      {isInsideApp && (
+          <Navigation 
+            currentPage={currentPage} 
+            setCurrentPage={setCurrentPage}
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
+            userRole={userRole}
+          />
+      )}
       
-      <div className="md:pl-60 transition-all duration-300 ease-in-out">
-          <Header onMenuClick={() => setIsSidebarOpen(true)} />
+      {isInsideApp ? (
+          <div className="md:pl-60 transition-all duration-300 ease-in-out">
+              <Header onMenuClick={() => setIsSidebarOpen(true)} />
+              <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-surface-glass backdrop-blur-md rounded-xl border border-line/50 p-6">
+                  {renderPage()}
+                </div>
+              </main>
+          </div>
+      ) : (
           <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-surface-glass backdrop-blur-md rounded-xl border border-line/50 p-6">
-              {renderPage()}
-            </div>
+            {renderPage()}
           </main>
-      </div>
+      )}
       
       {/* Backdrop for mobile sidebar */}
-      {isSidebarOpen && (
+      {isSidebarOpen && isInsideApp && (
         <div 
             className="fixed inset-0 bg-background/70 backdrop-blur-sm z-30 md:hidden"
             onClick={() => setIsSidebarOpen(false)}
@@ -318,7 +336,6 @@ function AppContent() {
         <AddEditInspectorModal 
             inspector={editingInspector}
             onClose={() => {setIsCreatingInspector(false); setEditingInspector(null);}}
-            onSave={handleSaveInspector}
         />
       )}
 
