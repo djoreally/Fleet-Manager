@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF--8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local-First Vehicle Fleet Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              // Theme-aware colors
+              'background': 'var(--color-background)',
+              'surface': 'var(--color-surface)',
+              'surface-glass': 'var(--color-surface-glass)',
+              'line': 'var(--color-line)',
+              'primary': 'var(--color-primary)',
+              'accent': 'var(--color-accent)',
+              'success': 'var(--color-success)',
+              'warning': 'var(--color-warning)',
+              'danger': 'var(--color-danger)',
+              'text-primary': 'var(--color-text-primary)',
+              'text-secondary': 'var(--color-text-secondary)',
+              'text-tertiary': 'var(--color-text-tertiary)',
+              'text-inverted': 'var(--color-text-inverted)',
+            },
+            animation: {
+              'spin-slow': 'spin 1.5s linear infinite',
+              'aurora': 'aurora 20s ease-in-out infinite',
+              'arcade-bg': 'arcade-bg 10s linear infinite',
+              'arcade-glow': 'arcade-glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              aurora: {
+                '0%, 100%': { transform: 'translate(10%, -10%) scale(1.5)' },
+                '50%': { transform: 'translate(-20%, 20%) scale(1.2)' },
+              },
+              'arcade-bg': {
+                '0%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+                '100%': { 'background-position': '0% 50%' },
+              },
+              'arcade-glow': {
+                'from': { 'text-shadow': '0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--color-accent), 0 0 20px var(--color-accent)' },
+                'to': { 'text-shadow': '0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--color-accent), 0 0 40px var(--color-accent)' },
+              },
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.58.0",
+    "dexie": "https://aistudiocdn.com/dexie@^4.2.0",
+    "dexie-react-hooks": "https://aistudiocdn.com/dexie-react-hooks@^4.2.0"
+  }
+}
+</script>
+<style>
+/* 1. Base Styles & Default Dark Theme (Midnight Drive) */
+:root {
+    --color-background: #111827;
+    --color-surface: #1F2937;
+    --color-surface-glass: #1f2937bf; /* 75% opacity */
+    --color-line: #4b5563;
+    --color-primary: #111827;
+    --color-accent: #00D4B8;
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-danger: #F87171;
+    --color-text-primary: #F9FAFB;
+    --color-text-secondary: #D1D5DB;
+    --color-text-tertiary: #6B7280;
+    --color-text-inverted: #111827;
+}
+
+/* 2. Light Theme (Daylight Shift) */
+html.light {
+    --color-background: #f0f9ff; /* sky-50 */
+    --color-surface: #ffffff;
+    --color-surface-glass: #ffffffbf; /* 75% opacity */
+    --color-line: #e0f2fe; /* sky-100 */
+    --color-primary: #ffffff;
+    --color-accent: #0ea5e9; /* sky-500 */
+    --color-success: #22c55e; /* green-500 */
+    --color-warning: #f59e0b; /* amber-500 */
+    --color-danger: #ef4444; /* red-500 */
+    --color-text-primary: #0c4a6e; /* sky-900 */
+    --color-text-secondary: #38bdf8; /* sky-400 */
+    --color-text-tertiary: #7dd3fc; /* sky-300 */
+    --color-text-inverted: #ffffff;
+}
+
+/* 3. Arcade Theme */
+html.arcade {
+    --color-background: #000;
+    --color-surface: #1a001a;
+    --color-surface-glass: #1a001ab3; /* 70% opacity */
+    --color-line: #ff00ff;
+    --color-primary: #000;
+    --color-accent: #00ffdd;
+    --color-success: #00ff00;
+    --color-warning: #ffff00;
+    --color-danger: #ff0000;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #cccccc;
+    --color-text-tertiary: #999999;
+    --color-text-inverted: #000000;
+}
+
+html.arcade {
+    background: #000;
+}
+html.arcade .arcade-bg-animation {
+    background: linear-gradient(90deg, #ff00ff, #00ffdd, #ffff00, #ff00ff);
+    background-size: 200% 200%;
+    animation: arcade-bg 10s ease infinite;
+}
+html.arcade .arcade-text-glow {
+    animation: arcade-glow 2s ease-in-out infinite alternate;
+}
+html.arcade .arcade-border {
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+html.arcade .arcade-border::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff00ff, #00ffdd, #ffff00, #ff00ff);
+  background-size: 200% 200%;
+  animation: arcade-bg 8s linear infinite;
+}
+
+
+/* General input styling */
+.input {
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-line);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    color: var(--color-text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input::placeholder { color: var(--color-text-tertiary); }
+.input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+/* Radio button styles for inspection forms */
+.radio-unchecked { background-color: color-mix(in srgb, var(--color-surface) 50%, var(--color-background)); color: var(--color-text-secondary); }
+.radio-checked-pass { background-color: var(--color-success); color: var(--color-text-inverted); }
+.radio-checked-fail { background-color: var(--color-danger); color: var(--color-text-inverted); }
+.radio-checked-na { background-color: var(--color-text-tertiary); color: var(--color-background); }
+
+/* Aurora Background */
+.aurora-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  filter: blur(80px);
+}
+.aurora-shape1 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-radius: 50%;
+  top: 10%;
+  left: 20%;
+}
+.aurora-shape2 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-radius: 50%;
+  top: 50%;
+  left: 60%;
+  animation-delay: 5s;
+}
+
+</style>
+</head>
+  <body class="bg-background text-text-secondary font-sans">
+    <div class="aurora-container">
+      <div class="aurora-shape1 animate-aurora"></div>
+      <div class="aurora-shape2 animate-aurora"></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx?v=1.0.1"></script>
+  </body>
+</html>
