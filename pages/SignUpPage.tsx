@@ -1,52 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CarIcon } from '../components/icons/CarIcon';
 
-export const LoginPage: React.FC = () => {
+export const SignUpPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const { signInWithPassword, loginWithMagicLink } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { signUp } = useAuth();
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('status') === 'signup_success') {
-      setMessage('Account created successfully! Please log in.');
-    }
-  }, [location.search]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setMessage(null);
-    try {
-      await signInWithPassword(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Invalid login credentials. Please try again.');
-      console.error(err);
-    }
-    setLoading(false);
-  };
 
-  const handleMagicLink = async () => {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
     try {
-      await loginWithMagicLink(email);
-      setMessage('Check your email for the login link!');
+      await signUp(email, password, businessName);
+      // On success, redirect to the login page with a success message
+      navigate('/login?status=signup_success');
+
     } catch (err) {
-      setError('Failed to send magic link. Please ensure your email is correct.');
+      setError('Failed to create account. Please try again.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -56,11 +37,25 @@ export const LoginPage: React.FC = () => {
             <div className="inline-block bg-accent/10 p-3 rounded-full mb-4">
                 <CarIcon className="w-10 h-10 text-accent" />
             </div>
-            <h1 className="text-3xl font-bold text-text-primary">Login</h1>
-            <p className="text-text-secondary">Welcome back.</p>
+            <h1 className="text-3xl font-bold text-text-primary">Create Your Account</h1>
+            <p className="text-text-secondary">Start managing your fleet today.</p>
         </div>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignUp}>
+          <div className="mb-4">
+            <label htmlFor="businessName" className="block text-sm font-medium text-text-secondary mb-2">
+              Business Name
+            </label>
+            <input
+              id="businessName"
+              type="text"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              required
+              className="input w-full"
+              placeholder="e.g., Acme Auto"
+            />
+          </div>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
               Email Address
@@ -85,37 +80,29 @@ export const LoginPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
               className="input w-full"
               placeholder="••••••••"
             />
           </div>
 
-          {error && <p className="mb-4 text-center text-sm text-danger">{error}</p>}
-          {message && <p className="mb-4 text-center text-sm text-success">{message}</p>}
+          {error && (
+            <p className="mb-4 text-center text-sm text-danger">{error}</p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 px-4 bg-accent text-text-inverted font-semibold rounded-lg shadow-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <div className="mt-6 flex items-center justify-center">
-            <button
-                onClick={handleMagicLink}
-                disabled={loading || !email}
-                className="text-sm text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                Or, send a magic link
-            </button>
-        </div>
-
         <p className="mt-6 text-center text-sm text-text-secondary">
-          Don't have an account?{' '}
-          <a href="/signup" className="font-medium text-accent hover:underline">
-            Sign Up
+          Already have an account?{' '}
+          <a href="/login" className="font-medium text-accent hover:underline">
+            Log In
           </a>
         </p>
       </div>

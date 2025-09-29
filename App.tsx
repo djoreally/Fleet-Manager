@@ -29,9 +29,9 @@ import { InspectorsPage } from "./pages/InspectorsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ExportPage } from "./pages/ExportPage";
 import { LoginPage } from "./pages/LoginPage";
+import { SignUpPage } from "./pages/SignUpPage";
 
 // Placeholder auth pages
-const SignUpPage = () => <div className="text-white">Sign Up Page</div>;
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
@@ -61,7 +61,6 @@ const DEFAULT_CHECKLIST_ITEMS = [
 
 function AppContent() {
   const location = useLocation();
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [viewingInspectionsFor, setViewingInspectionsFor] = useState<Vehicle | null>(null);
   const [inspectingVehicle, setInspectingVehicle] = useState<Vehicle | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -136,16 +135,6 @@ function AppContent() {
   }, []);
 
 
-  const handleSaveVehicle = async (updatedData: Omit<Vehicle, 'id' | 'updatedAt'>) => {
-    if (!editingVehicle) return;
-
-    await localDB.vehicles.put({
-      ...editingVehicle,
-      ...updatedData,
-      updatedAt: Date.now(),
-    });
-  };
-
   const handleStartInspection = (vehicle: Vehicle) => {
     setViewingInspectionsFor(null);
     setInspectingVehicle(vehicle);
@@ -209,10 +198,10 @@ function AppContent() {
           />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/onboarding" element={<OnboardingPage onComplete={() => {}} />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
 
         <Route path="/dashboard" element={<ProtectedRoute><AppLayout><DashboardPage onVehicleAddedForInspection={handleVehicleAddedAndStartInspection} /></AppLayout></ProtectedRoute>} />
-        <Route path="/fleet" element={<ProtectedRoute><AppLayout><FleetPage onEditVehicle={setEditingVehicle} onViewInspections={setViewingInspectionsFor} /></AppLayout></ProtectedRoute>} />
+        <Route path="/fleet" element={<ProtectedRoute><AppLayout><FleetPage onViewInspections={setViewingInspectionsFor} /></AppLayout></ProtectedRoute>} />
         <Route path="/inspections" element={<ProtectedRoute><AppLayout><InspectionsPage /></AppLayout></ProtectedRoute>} />
         <Route path="/checklists" element={<ProtectedRoute><AppLayout><ChecklistsPage /></AppLayout></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><AppLayout><CustomersPage onEditCustomer={setEditingCustomer} onCreateCustomer={() => setIsCreatingCustomer(true)} /></AppLayout></ProtectedRoute>} />
@@ -222,16 +211,8 @@ function AppContent() {
 
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
-      
-      {/* Modals remain here as they are global */}
-      {editingVehicle && (
-        <EditVehicleModal 
-          vehicle={editingVehicle}
-          onClose={() => setEditingVehicle(null)}
-          onSave={handleSaveVehicle}
-        />
-      )}
 
+      {/* Modals remain here as they are global */}
       {viewingInspectionsFor && (
         <InspectionHistoryModal
           vehicle={viewingInspectionsFor}

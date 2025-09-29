@@ -1,21 +1,15 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { prisma } from '../_shared/prismaClient.ts'
-
-// This function will eventually get the tenant ID from the authenticated user's JWT
-async function getTenantIdFromAuth(req: Request): Promise<string> {
-  const authHeader = req.headers.get('Authorization');
-  if (authHeader && authHeader.startsWith('Bearer tenant_')) {
-    return authHeader.split('tenant_')[1];
-  }
-  return 'cuid_placeholder_tenant_id';
-}
+import { getTenantIdFromAuth } from '../_shared/auth.ts'
 
 serve(async (req) => {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || 'http://localhost:5173';
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       }

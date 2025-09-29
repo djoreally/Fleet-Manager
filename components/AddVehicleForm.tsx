@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { localDB } from '../services/localDB';
+import { apiFetch } from '../services/api';
 import { decodeVin } from '../services/nhtsaService';
 import { WandIcon } from './icons/WandIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';
@@ -9,10 +9,9 @@ interface AddVehicleFormProps {
     onVehicleAdded?: (vehicle: Vehicle) => void;
     title?: string;
     submitButtonText?: string;
-    sampleButtonText?: string;
 }
 
-export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, title, submitButtonText, sampleButtonText }) => {
+export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, title, submitButtonText }) => {
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState<number | ''>('');
@@ -51,8 +50,7 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
     
     setIsSubmitting(true);
     try {
-      const newVehicle: Vehicle = {
-        id: crypto.randomUUID(),
+      const vehicleData = {
         make,
         model,
         year: Number(year),
@@ -63,9 +61,12 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
         airFilterPartNumber: airFilter,
         cabinAirFilterPartNumber: cabinAirFilter,
         fuelFilterPartNumber: fuelFilter,
-        updatedAt: Date.now(),
       };
-      await localDB.vehicles.add(newVehicle);
+
+      const newVehicle = await apiFetch('create-vehicle', {
+        method: 'POST',
+        body: JSON.stringify(vehicleData),
+      });
       
       if (onVehicleAdded) {
         onVehicleAdded(newVehicle);
@@ -90,50 +91,6 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
         setIsSubmitting(false);
     }
   };
-  
-  const addSampleVehicle = async () => {
-    setIsSubmitting(true);
-    const sampleMakes = ["Toyota", "Ford", "Honda", "Chevrolet", "Nissan"];
-    const sampleModels = ["Camry", "F-150", "Civic", "Silverado", "Rogue"];
-    const randomMake = sampleMakes[Math.floor(Math.random() * sampleMakes.length)];
-    const randomModel = sampleModels[Math.floor(Math.random() * sampleModels.length)];
-
-    const generateRandomString = (length: number, chars: string) => {
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    };
-    const randomVin = generateRandomString(17, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
-    const randomPlate = `${generateRandomString(3, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-${generateRandomString(3, '0123456789')}`;
-
-    try {
-      const newVehicle: Vehicle = {
-        id: crypto.randomUUID(),
-        make: randomMake,
-        model: randomModel,
-        year: Math.floor(Math.random() * (2024 - 2000 + 1)) + 2000,
-        mileage: Math.floor(Math.random() * 150000),
-        vin: randomVin,
-        licensePlate: randomPlate,
-        oilFilterPartNumber: `PH${Math.floor(Math.random() * 10000)}`,
-        airFilterPartNumber: `CA${Math.floor(Math.random() * 10000)}`,
-        cabinAirFilterPartNumber: `CF${Math.floor(Math.random() * 10000)}`,
-        fuelFilterPartNumber: `G${Math.floor(Math.random() * 10000)}`,
-        updatedAt: Date.now(),
-      };
-      await localDB.vehicles.add(newVehicle);
-       if (onVehicleAdded) {
-          onVehicleAdded(newVehicle);
-      }
-    } catch(error) {
-        console.error("Failed to add sample vehicle", error);
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
 
   return (
     <>
@@ -205,9 +162,6 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
         <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={isSubmitting} className="flex-1 w-full flex justify-center py-2 px-4 rounded-md shadow-sm text-sm font-semibold text-text-inverted bg-accent hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 {isSubmitting ? 'Adding...' : (submitButtonText || 'Add Vehicle')}
-            </button>
-            <button type="button" onClick={addSampleVehicle} disabled={isSubmitting} className="flex-1 w-full flex justify-center py-2 px-4 border border-line rounded-md shadow-sm text-sm font-medium text-text-secondary bg-surface hover:bg-line/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-accent disabled:opacity-50">
-                {sampleButtonText || 'Add Sample Vehicle'}
             </button>
         </div>
       </form>
