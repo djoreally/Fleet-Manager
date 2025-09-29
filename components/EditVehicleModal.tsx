@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Vehicle } from '../types';
+import { apiFetch } from '../services/api';
 import { decodeVin } from '../services/nhtsaService';
 import { WandIcon } from './icons/WandIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';
@@ -7,10 +8,10 @@ import { SpinnerIcon } from './icons/SpinnerIcon';
 interface EditVehicleModalProps {
   vehicle: Vehicle;
   onClose: () => void;
-  onSave: (updatedData: Omit<Vehicle, 'id' | 'updatedAt'>) => Promise<void>;
+  onUpdateSuccess: () => void;
 }
 
-export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onClose, onSave }) => {
+export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onClose, onUpdateSuccess }) => {
   const [make, setMake] = useState(vehicle.make);
   const [model, setModel] = useState(vehicle.model);
   const [year, setYear] = useState<number | ''>(vehicle.year);
@@ -49,7 +50,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onC
     
     setIsSubmitting(true);
     try {
-      await onSave({
+      const updatedData = {
         make,
         model,
         year: Number(year),
@@ -60,7 +61,14 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onC
         airFilterPartNumber: airFilter,
         cabinAirFilterPartNumber: cabinAirFilter,
         fuelFilterPartNumber: fuelFilter,
+      };
+
+      await apiFetch(`update-vehicle/${vehicle.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedData),
       });
+
+      onUpdateSuccess();
       onClose();
     } catch (error) {
       console.error("Failed to update vehicle:", error);

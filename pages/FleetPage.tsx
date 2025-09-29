@@ -1,18 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Vehicle } from '../types';
-import { useVehicles } from '../hooks/useVehicles';
+import { apiFetch } from '../services/api';
 import { VehicleList } from '../components/VehicleList';
-import { localDB } from '../services/localDB';
+import { EditVehicleModal } from '../components/EditVehicleModal';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface FleetPageProps {
-  onEditVehicle: (vehicle: Vehicle) => void;
   onViewInspections: (vehicle: Vehicle) => void;
 }
 
-export const FleetPage: React.FC<FleetPageProps> = ({ onEditVehicle, onViewInspections }) => {
-  const vehicles = useVehicles();
+export const FleetPage: React.FC<FleetPageProps> = ({ onViewInspections }) => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+
+  const fetchVehicles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch('get-vehicles');
+      setVehicles(data);
+    } catch (err) {
+      setError('Failed to fetch vehicles. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [fetchVehicles]);
 
   const toggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
@@ -29,31 +50,27 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onEditVehicle, onViewInspe
 
   const handleBulkDelete = async () => {
     if (selectedVehicleIds.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedVehicleIds.length} vehicle(s) and all their associated inspections? This action cannot be undone.`)) {
+    if (confirm(`Are you sure you want to delete ${selectedVehicleIds.length} vehicle(s)? This action cannot be undone.`)) {
       try {
-        // Find all inspections associated with the selected vehicles
-        const inspectionsToDelete = await localDB.inspections
-          .where('vehicleId').anyOf(selectedVehicleIds)
-          .toArray();
-        const inspectionIdsToDelete = inspectionsToDelete.map(i => i.id);
-
-        // Perform deletions in a transaction
-        // FIX: Cast localDB to 'any' to resolve TypeScript error where 'transaction' method is not found on the subclassed Dexie instance.
-        await (localDB as any).transaction('rw', localDB.inspections, localDB.vehicles, async () => {
-          if (inspectionIdsToDelete.length > 0) {
-            await localDB.inspections.bulkDelete(inspectionIdsToDelete);
-          }
-          await localDB.vehicles.bulkDelete(selectedVehicleIds);
-        });
-        
-        // Exit selection mode
+        await Promise.all(
+          selectedVehicleIds.map(id => apiFetch(`delete-vehicle/${id}`, { method: 'DELETE' }))
+        );
+        await fetchVehicles();
         toggleSelectionMode();
-      } catch (error) {
-        console.error("Failed to bulk delete vehicles:", error);
+      } catch (err) {
+        console.error("Failed to bulk delete vehicles:", err);
         alert("An error occurred during bulk deletion. Please check the console.");
       }
     }
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><LoadingSpinner /></div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-danger p-4">{error}</div>;
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -78,12 +95,19 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onEditVehicle, onViewInspe
       </div>
       <VehicleList 
         vehicles={vehicles} 
-        onEdit={onEditVehicle} 
+        onEdit={setEditingVehicle}
         onViewInspections={onViewInspections}
         isSelectionMode={isSelectionMode}
         selectedVehicleIds={selectedVehicleIds}
         onToggleSelection={handleToggleVehicleSelection}
       />
+      {editingVehicle && (
+        <EditVehicleModal
+            vehicle={editingVehicle}
+            onClose={() => setEditingVehicle(null)}
+            onUpdateSuccess={fetchVehicles}
+        />
+      )}
     </div>
   );
 };

@@ -6,9 +6,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  login: (email: string) => Promise<any>;
+  loginWithMagicLink: (email: string) => Promise<any>;
+  signInWithPassword: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, businessName: string) => Promise<any>;
   logout: () => Promise<any>;
-  // Add other auth methods like signUp, password areset, etc. as needed
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,11 +42,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const login = async (email: string) => {
-    // For simplicity, using magic link login. Could be extended for passwords.
+  const loginWithMagicLink = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) throw error;
-    // User will be sent a login link.
+  };
+
+  const signInWithPassword = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string, businessName: string) => {
+    const { data, error } = await supabase.functions.invoke('sign-up', {
+        body: { email, password, businessName },
+    });
+
+    if (error) throw error;
+    return data;
   };
 
   const logout = async () => {
@@ -57,7 +70,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     session,
     loading,
-    login,
+    loginWithMagicLink,
+    signInWithPassword,
+    signUp,
     logout,
   };
 

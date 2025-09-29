@@ -1,0 +1,72 @@
+# Supabase project configuration
+# See https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "nspector"
+# organization_id is required for some Supabase features.
+# You can find your organization ID in the Supabase dashboard.
+# organization_id = "your-organization-id"
+
+[api]
+# The API port for local development.
+port = 54321
+# The schemas to expose in the API.
+schemas = ["public", "storage", "graphql"]
+# The extra search path for the API.
+extra_search_path = ["public"]
+# The maximum number of rows to return from a view, table, or function.
+max_rows = 1000
+
+[db]
+# The database port for local development.
+port = 54322
+# Use a custom major version of Postgres.
+major_version = 15
+
+[studio]
+# The Studio port for local development.
+port = 54323
+
+# Email testing server
+[inbucket]
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[functions]
+# The directory where your Edge Functions are stored.
+# path = "supabase/functions"
+# Set to true to verify JWT tokens for all Edge Functions.
+# verify_jwt = true
+# The import map file for your Edge Functions.
+# import_map = "supabase/functions/import_map.json"
+
+[auth]
+# The site URL for your project.
+site_url = "http://localhost:5173"
+# A list of additional redirect URLs.
+additional_redirect_urls = ["http://localhost:5173"]
+# Set to true to enable email confirmations.
+enable_email_confirmations = false
+# The email template for the confirmation email.
+# email_template_path = "supabase/auth/confirm.html"
+# The email template for the magic link email.
+# magic_link_template_path = "supabase/auth/magic_link.html"
+# The email template for the password reset email.
+# password_reset_template_path = "supabase/auth/reset_password.html"
+# The email template for the email change email.
+# email_change_template_path = "supabase/auth/email_change.html"
+
+[analytics]
+# Set to false to disable analytics for your project.
+enabled = false
+# The Google Analytics tracking ID for your project.
+# ga_tracking_id = "UA-123456789-0"
+
+[realtime]
+# The schemas to enable Realtime for.
+enabled = ["public"]
+# The maximum number of events to buffer.
+# max_buffer_size = 1000
+# The maximum number of events to send per second.
+# max_events_per_second = 100
