@@ -1,15 +1,15 @@
 import React from 'react';
 import { CarIcon } from './icons/CarIcon';
 import { MenuIcon } from './icons/MenuIcon';
-import { useUserSettings } from '../hooks/useUserSettings';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const settings = useUserSettings();
-  const appName = settings.businessName || 'Local-First Fleet Manager';
+  const { tenant } = useAuth();
+  const appName = tenant?.name || 'Fleet Manager';
 
   return (
     <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                         {appName}
                     </h1>
                     <p className="hidden sm:block mt-1 text-base lg:text-lg text-text-secondary">
-                        Your data is safe locally. Connect to sync with the cloud.
+                        A modern solution for managing your vehicle fleet.
                     </p>
                 </div>
             </div>

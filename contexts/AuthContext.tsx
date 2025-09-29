@@ -1,18 +1,23 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { apiFetch } from '../services/api';
 
-const API_URL = 'http://localhost:3001/api';
-
+// Define more specific types for our context
 interface User {
-  userId: string;
-  tenantId: string;
-  role: string;
   email: string;
+  name: string | null;
+  role: string;
+  onboardingComplete: boolean;
+}
+
+interface Tenant {
+  id: string;
+  name: string;
+  logoImage?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  tenant: Tenant | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, businessName: string) => Promise<void>;
@@ -21,39 +26,44 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// A helper function to decode the JWT and get user info
-const getUserFromToken = (token: string): User | null => {
-  try {
-    const decoded: any = jwtDecode(token);
-    return {
-      userId: decoded.userId,
-      tenantId: decoded.tenantId,
-      role: decoded.role,
-      email: decoded.email, // Assuming email is in the token, or you can fetch it
-    };
-  } catch (error) {
-    console.error("Failed to decode token:", error);
-    return null;
-  }
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // On initial load, check for a token in local storage
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken) {
-      setToken(storedToken);
-      setUser(getUserFromToken(storedToken));
+  // This function logs out the user and clears all state
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setUser(null);
+    setTenant(null);
+  };
+
+  // This function fetches user and tenant data from the backend
+  const fetchUserSettings = async () => {
+    try {
+      const settings = await apiFetch('user/settings');
+      setUser(settings.user);
+      setTenant(settings.tenant);
+    } catch (error) {
+      console.error("Authentication error: Failed to fetch user settings.", error);
+      handleLogout(); // If we can't get settings, the token is likely invalid
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('authToken');
+      if (storedToken) {
+        // We have a token, now let's get the user and tenant info from our backend
+        await fetchUserSettings();
+      }
+      setLoading(false);
+    }
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetch(`http://localhost:3001/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -66,12 +76,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { token: newToken } = await response.json();
     localStorage.setItem('authToken', newToken);
-    setToken(newToken);
-    setUser(getUserFromToken(newToken));
+    // After logging in, fetch the user settings
+    await fetchUserSettings();
   };
 
   const signUp = async (email: string, password: string, businessName: string) => {
-    const response = await fetch(`${API_URL}/auth/signup`, {
+    const response = await fetch(`http://localhost:3001/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, businessName }),
@@ -83,19 +93,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    setToken(null);
-    setUser(null);
-  };
-
   const value = {
     user,
-    token,
+    tenant,
     loading,
     login,
     signUp,
-    logout,
+    logout: handleLogout,
   };
 
   return (

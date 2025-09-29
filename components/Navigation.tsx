@@ -7,7 +7,7 @@ import { ChecklistIcon } from './icons/ChecklistIcon';
 import { CogIcon } from './icons/CogIcon';
 import { UserIcon } from './icons/UserIcon';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
-import { useUserSettings } from '../hooks/useUserSettings';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { LayoutGridIcon } from './icons/LayoutGridIcon';
@@ -19,9 +19,9 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ isSidebarOpen, setIsSidebarOpen, userRole }) => {
-  const settings = useUserSettings();
+  const { tenant } = useAuth();
   const { theme } = useTheme();
-  const appName = settings.businessName || 'Fleet';
+  const appName = tenant?.name || 'Fleet';
 
   const allNavItems = [
     { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <LayoutGridIcon className="w-5 h-5" />, roles: ['manager'] },
@@ -39,8 +39,8 @@ export const Navigation: React.FC<NavigationProps> = ({ isSidebarOpen, setIsSide
   return (
     <nav className={`fixed inset-y-0 left-0 z-40 w-60 bg-surface-glass backdrop-blur-md p-4 flex flex-col gap-4 border-r border-line/50 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center gap-2 px-2">
-            {settings.logoImage ? (
-                <img src={settings.logoImage} alt="Business Logo" className="w-8 h-8 rounded-md object-cover" />
+            {tenant?.logoImage ? (
+                <img src={tenant.logoImage} alt="Business Logo" className="w-8 h-8 rounded-md object-cover" />
             ) : (
                 <CarIcon className="w-8 h-8 text-accent"/>
             )}
