@@ -63,7 +63,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onC
         fuelFilterPartNumber: fuelFilter,
       };
 
-      await apiFetch(`update-vehicle/${vehicle.id}`, {
+      await apiFetch(`vehicles/${vehicle.id}`, {
         method: 'PUT',
         body: JSON.stringify(updatedData),
       });
@@ -71,8 +71,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, onC
       onUpdateSuccess();
       onClose();
     } catch (error) {
-      console.error("Failed to update vehicle:", error);
-      alert("Failed to update vehicle. Check console for details.");
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      alert(`Failed to update vehicle: ${message}`);
     } finally {
         setIsSubmitting(false);
     }

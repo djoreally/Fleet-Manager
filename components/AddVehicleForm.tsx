@@ -63,7 +63,7 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
         fuelFilterPartNumber: fuelFilter,
       };
 
-      const newVehicle = await apiFetch('create-vehicle', {
+      const newVehicle = await apiFetch('vehicles', {
         method: 'POST',
         body: JSON.stringify(vehicleData),
       });
@@ -85,8 +85,8 @@ export const AddVehicleForm: React.FC<AddVehicleFormProps> = ({ onVehicleAdded, 
       }
 
     } catch (error) {
-      console.error("Failed to add vehicle:", error);
-      alert("Failed to add vehicle. Check console for details.");
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      alert(`Failed to add vehicle: ${message}`);
     } finally {
         setIsSubmitting(false);
     }

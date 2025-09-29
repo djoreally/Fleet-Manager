@@ -10,13 +10,12 @@ import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useTheme } from '../contexts/ThemeContext';
 import { DatabaseIcon } from './icons/DatabaseIcon';
-import type { UserSettings } from '../types';
 import { LayoutGridIcon } from './icons/LayoutGridIcon';
 
 interface NavigationProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
-  userRole: UserSettings['userRole'];
+  userRole: string;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ isSidebarOpen, setIsSidebarOpen, userRole }) => {
@@ -25,7 +24,6 @@ export const Navigation: React.FC<NavigationProps> = ({ isSidebarOpen, setIsSide
   const appName = settings.businessName || 'Fleet';
 
   const allNavItems = [
-    { id: 'home', path: '/', label: 'Home', icon: <HomeIcon className="w-5 h-5" />, roles: ['manager', 'technician'] },
     { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: <LayoutGridIcon className="w-5 h-5" />, roles: ['manager'] },
     { id: 'fleet', path: '/fleet', label: 'My Fleet', icon: <CarIcon className="w-5 h-5" />, roles: ['manager', 'technician'] },
     { id: 'inspections', path: '/inspections', label: 'Inspections', icon: <ClipboardListIcon className="w-5 h-5" />, roles: ['manager', 'technician'] },
@@ -54,7 +52,6 @@ export const Navigation: React.FC<NavigationProps> = ({ isSidebarOpen, setIsSide
                     key={item.id}
                     to={item.path}
                     onClick={() => setIsSidebarOpen(false)}
-                    end={item.path === '/'} // Ensure home is not active for all routes
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                         isActive

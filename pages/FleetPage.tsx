@@ -3,29 +3,31 @@ import type { Vehicle } from '../types';
 import { apiFetch } from '../services/api';
 import { VehicleList } from '../components/VehicleList';
 import { EditVehicleModal } from '../components/EditVehicleModal';
+import { AddVehicleModal } from '../components/AddVehicleModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
-interface FleetPageProps {
-  onViewInspections: (vehicle: Vehicle) => void;
-}
-
-export const FleetPage: React.FC<FleetPageProps> = ({ onViewInspections }) => {
+export const FleetPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // State for modals
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+
+  // State for selection
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch('get-vehicles');
+      const data = await apiFetch('vehicles');
       setVehicles(data);
     } catch (err) {
-      setError('Failed to fetch vehicles. Please try again later.');
-      console.error(err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch vehicles.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -37,7 +39,7 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onViewInspections }) => {
 
   const toggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
-    setSelectedVehicleIds([]); // Reset selection when toggling mode
+    setSelectedVehicleIds([]);
   };
 
   const handleToggleVehicleSelection = (vehicleId: string) => {
@@ -53,15 +55,25 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onViewInspections }) => {
     if (confirm(`Are you sure you want to delete ${selectedVehicleIds.length} vehicle(s)? This action cannot be undone.`)) {
       try {
         await Promise.all(
-          selectedVehicleIds.map(id => apiFetch(`delete-vehicle/${id}`, { method: 'DELETE' }))
+          selectedVehicleIds.map(id => apiFetch(`vehicles/${id}`, { method: 'DELETE' }))
         );
         await fetchVehicles();
         toggleSelectionMode();
       } catch (err) {
-        console.error("Failed to bulk delete vehicles:", err);
-        alert("An error occurred during bulk deletion. Please check the console.");
+        const message = err instanceof Error ? err.message : 'An error occurred during bulk deletion.';
+        alert(message);
       }
     }
+  };
+
+  const handleAddSuccess = () => {
+    setIsAddModalOpen(false);
+    fetchVehicles();
+  };
+
+  const handleUpdateSuccess = () => {
+    setEditingVehicle(null);
+    fetchVehicles();
   };
 
   if (loading) {
@@ -91,21 +103,35 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onViewInspections }) => {
             >
                 {isSelectionMode ? 'Cancel' : 'Select'}
             </button>
+            {!isSelectionMode && (
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="px-4 py-2 flex items-center gap-2 rounded-md shadow-sm text-sm font-semibold bg-accent text-text-inverted"
+                >
+                    Add Vehicle
+                </button>
+            )}
         </div>
       </div>
       <VehicleList 
         vehicles={vehicles} 
         onEdit={setEditingVehicle}
-        onViewInspections={onViewInspections}
+        onViewInspections={() => { /* TODO: Implement inspection view */ }}
         isSelectionMode={isSelectionMode}
         selectedVehicleIds={selectedVehicleIds}
         onToggleSelection={handleToggleVehicleSelection}
       />
+      {isAddModalOpen && (
+        <AddVehicleModal
+          onClose={() => setIsAddModalOpen(false)}
+          onAddSuccess={handleAddSuccess}
+        />
+      )}
       {editingVehicle && (
         <EditVehicleModal
             vehicle={editingVehicle}
             onClose={() => setEditingVehicle(null)}
-            onUpdateSuccess={fetchVehicles}
+            onUpdateSuccess={handleUpdateSuccess}
         />
       )}
     </div>
