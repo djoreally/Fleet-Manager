@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CarIcon } from '../components/icons/CarIcon';
 
@@ -8,43 +8,22 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const { signInWithPassword, loginWithMagicLink } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('status') === 'signup_success') {
-      setMessage('Account created successfully! Please log in.');
-    }
-  }, [location.search]);
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setMessage(null);
     try {
-      await signInWithPassword(email, password);
-      navigate('/dashboard');
+      await login(email, password);
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('Invalid login credentials. Please try again.');
-      console.error(err);
-    }
-    setLoading(false);
-  };
-
-  const handleMagicLink = async () => {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    try {
-      await loginWithMagicLink(email);
-      setMessage('Check your email for the login link!');
-    } catch (err) {
-      setError('Failed to send magic link. Please ensure your email is correct.');
-      console.error(err);
+      const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setError(message);
     }
     setLoading(false);
   };
@@ -91,7 +70,6 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {error && <p className="mb-4 text-center text-sm text-danger">{error}</p>}
-          {message && <p className="mb-4 text-center text-sm text-success">{message}</p>}
 
           <button
             type="submit"
@@ -101,16 +79,6 @@ export const LoginPage: React.FC = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-
-        <div className="mt-6 flex items-center justify-center">
-            <button
-                onClick={handleMagicLink}
-                disabled={loading || !email}
-                className="text-sm text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                Or, send a magic link
-            </button>
-        </div>
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           Don't have an account?{' '}

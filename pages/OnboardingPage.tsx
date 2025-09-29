@@ -1,28 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUserSettings } from '../hooks/useUserSettings';
-import { localDB } from '../services/localDB';
 import { UserSettingsForm } from '../components/UserSettingsForm';
 import { InspectorForm } from '../components/InspectorForm';
 import { CarIcon } from '../components/icons/CarIcon';
 
-export const OnboardingPage: React.FC = () => {
+interface OnboardingPageProps {
+  onComplete: () => void;
+}
+
+export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onComplete }) => {
     const [step, setStep] = useState<'settings' | 'inspector'>('settings');
-    const navigate = useNavigate();
-    const settings = useUserSettings();
-    const userRole = settings.userRole || 'manager';
 
     const handleSettingsSaved = () => {
         setStep('inspector');
     };
 
-    const handleInspectorSaved = async () => {
-        await localDB.userSettings.update(1, { onboardingComplete: true, updatedAt: Date.now() });
-        if (userRole === 'technician') {
-            navigate('/fleet');
-        } else {
-            navigate('/dashboard');
-        }
+    const handleInspectorSaved = () => {
+        onComplete();
     };
 
     return (

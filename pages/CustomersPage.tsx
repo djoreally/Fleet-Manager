@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-// TODO: Refactor this page to fetch and manage data using the new `apiFetch` service.
-// The current implementation relies on the deprecated localDB and `useCustomers` hook.
 import type { Customer } from '../types';
 import { useCustomers } from '../hooks/useCustomers';
 import { CustomerList } from '../components/CustomerList';

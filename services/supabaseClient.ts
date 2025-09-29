@@ -1,10 +1,23 @@
-import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase URL and Anon Key must be provided in .env file.");
+let supabase: SupabaseClient | null = null;
+
+export function connectSupabase(url: string, key: string): SupabaseClient {
+  if (!url || !key) {
+    throw new Error("Supabase URL and Key must be provided.");
+  }
+  supabase = createClient(url, key);
+  return supabase;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export function getSupabase(): SupabaseClient {
+  if (!supabase) {
+    throw new Error("Supabase client has not been initialized. Call connectSupabase first.");
+  }
+  return supabase;
+}
+
+export function isSupabaseConnected(): boolean {
+  return supabase !== null;
+}

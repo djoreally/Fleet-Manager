@@ -1,6 +1,4 @@
 import React from 'react';
-// TODO: Refactor this page to fetch and manage data using the new `apiFetch` service.
-// The current implementation relies on the deprecated localDB and `useInspectors` hook.
 import type { Inspector } from '../types';
 import { useInspectors } from '../hooks/useInspectors';
 import { InspectorList } from '../components/InspectorList';

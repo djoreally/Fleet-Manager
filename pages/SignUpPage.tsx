@@ -23,8 +23,8 @@ export const SignUpPage: React.FC = () => {
       navigate('/login?status=signup_success');
 
     } catch (err) {
-      setError('Failed to create account. Please try again.');
-      console.error(err);
+      const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setError(message);
     } finally {
       setLoading(false);
     }
