@@ -1,23 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { apiFetch } from '../services/api';
 import { CarIcon } from '../components/icons/CarIcon';
-import { DownloadIcon } from '../components/icons/DownloadIcon';
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
-interface HomePageProps {
-  onContinueToApp: () => void;
-  installPromptEvent: any;
-  onInstall: () => void;
-}
+export const HomePage: React.FC = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [isContinuing, setIsContinuing] = useState(false);
 
-export const HomePage: React.FC<HomePageProps> = ({ onContinueToApp, installPromptEvent, onInstall }) => {
-  const [isAppInstalled, setIsAppInstalled] = useState(false);
-
-  useEffect(() => {
-    // Check if the app is running in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsAppInstalled(true);
+  const handleContinueToApp = async () => {
+    setIsContinuing(true);
+    try {
+      // Fetch the user's settings to check their onboarding status
+      const settings = await apiFetch('user/settings');
+      if (settings.user.onboardingComplete) {
+        navigate('/dashboard');
+      } else {
+        navigate('/onboarding');
+      }
+    } catch (error) {
+      console.error("Failed to fetch user settings:", error);
+      // If fetching settings fails, it's safest to log out the user
+      // as their session might be invalid.
+      // In a real app, you might want to show an error message.
+      navigate('/login');
+    } finally {
+      setIsContinuing(false);
     }
-  }, []);
+  };
+
+  const renderAuthButtons = () => {
+    if (loading) {
+      return <LoadingSpinner />;
+    }
+
+    if (user) {
+      return (
+        <button
+          onClick={handleContinueToApp}
+          disabled={isContinuing}
+          className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold rounded-lg bg-accent text-text-inverted hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50"
+        >
+          {isContinuing ? <LoadingSpinner /> : (
+            <>
+              <span>Continue to App</span>
+              <ArrowRightIcon className="w-6 h-6" />
+            </>
+          )}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button
+          onClick={() => navigate('/login')}
+          className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold rounded-lg bg-accent text-text-inverted hover:opacity-90 transition-all transform hover:scale-105"
+        >
+          Login
+        </button>
+        <button
+          onClick={() => navigate('/signup')}
+          className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold rounded-lg bg-surface hover:bg-line/50 border border-line text-text-secondary transition-colors"
+        >
+          Sign Up
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="text-center flex flex-col items-center justify-center p-8 rounded-lg min-h-[60vh]">
@@ -28,34 +81,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onContinueToApp, installProm
         Welcome to the Fleet Manager
       </h1>
       <p className="max-w-2xl mx-auto text-lg text-text-secondary mb-8">
-        A modern, offline-first application to manage your vehicle fleet with ease. All your data is stored securely on your device, ensuring speed, privacy, and reliability—even without an internet connection.
+        A modern, cloud-based application to manage your vehicle fleet with ease. All your data is stored securely and is accessible from anywhere.
       </p>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        {!isAppInstalled && installPromptEvent && (
-          <button
-            onClick={onInstall}
-            className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold rounded-lg shadow-lg text-text-inverted bg-accent hover:opacity-90 transition-all transform hover:scale-105"
-          >
-            <DownloadIcon className="w-6 h-6" />
-            Install App
-          </button>
-        )}
-        
-        <button
-          onClick={onContinueToApp}
-          className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold rounded-lg bg-surface hover:bg-line/50 border border-line text-text-secondary transition-colors"
-        >
-          <span>Continue to App</span>
-          <ArrowRightIcon className="w-6 h-6" />
-        </button>
-      </div>
-
-      {isAppInstalled && (
-          <p className="mt-6 text-sm text-success">
-              ✓ Application is installed and ready for offline use.
-          </p>
-      )}
+      {renderAuthButtons()}
     </div>
   );
 };

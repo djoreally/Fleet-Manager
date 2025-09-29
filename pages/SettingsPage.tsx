@@ -1,39 +1,40 @@
 import React from 'react';
-import { SyncStatus } from '../types';
-import { StatusIndicator } from '../components/StatusIndicator';
-import { ConnectForm } from '../components/ConnectForm';
-import { UserSettingsForm } from '../components/UserSettingsForm';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import { RoleSelector } from '../components/RoleSelector';
 
-interface SettingsPageProps {
-    syncStatus: SyncStatus;
-    errorMessage: string | null;
-    onConnect: (url: string, key: string) => Promise<void>;
-}
+export const SettingsPage: React.FC = () => {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ syncStatus, errorMessage, onConnect }) => {
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="flex flex-col gap-8 max-w-2xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-surface rounded-lg shadow-md border border-line">
-        <div>
-          <h2 className="text-xl font-bold text-text-primary">Sync Status</h2>
-          <p className="text-text-secondary">Manage your connection to the cloud.</p>
-        </div>
-        <StatusIndicator status={syncStatus} />
+      <div className="p-4 bg-surface rounded-lg shadow-md border border-line">
+        <h2 className="text-xl font-bold text-text-primary">Account</h2>
+        <p className="text-text-secondary">Manage your account settings.</p>
+        {user && <p className="mt-2 text-text-primary">Logged in as: {user.email}</p>}
+        <button
+          onClick={handleLogout}
+          className="mt-4 px-4 py-2 bg-danger text-white rounded-md hover:bg-danger/90 transition-colors"
+        >
+          Logout
+        </button>
       </div>
-
-      {errorMessage && (
-        <div className="p-4 bg-danger/10 text-danger border border-danger/30 rounded-lg">
-          <p className="font-semibold">Error</p>
-          <p>{errorMessage}</p>
-        </div>
-      )}
 
       <RoleSelector />
       <ThemeSwitcher />
-      <UserSettingsForm />
-      <ConnectForm onConnect={onConnect} status={syncStatus} />
+
+      {/* TODO: Re-implement UserSettingsForm to use the new API */}
+      <div className="p-4 bg-surface rounded-lg shadow-md border border-line opacity-50">
+          <h2 className="text-xl font-bold text-text-primary">Business Settings</h2>
+          <p className="text-text-secondary">Editing business information is coming soon.</p>
+      </div>
     </div>
   );
 };

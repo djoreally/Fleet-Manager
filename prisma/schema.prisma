@@ -32,6 +32,7 @@ model User {
   name      String?
   phone     String?
   role      String   @default("technician") // e.g., 'manager', 'technician'
+  onboardingComplete Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])

@@ -16,6 +16,7 @@ app.use(express.json()); // Parse JSON bodies
 
 import authRoutes from './routes/auth';
 import vehicleRoutes from './routes/vehicles';
+import userRoutes from './routes/user';
 import { authenticateToken } from './middleware/auth';
 
 // Basic route to confirm the server is up
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', authenticateToken, vehicleRoutes);
+app.use('/api/user', authenticateToken, userRoutes);
 
 // Start the server
 app.listen(port, () => {

@@ -1,28 +1,21 @@
 import React from 'react';
-import { useUserSettings } from '../hooks/useUserSettings';
-import { localDB } from '../services/localDB';
-import type { UserSettings } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { WrenchIcon } from './icons/WrenchIcon';
 
-
-// FIX: The type for `icon` was too generic (`React.ReactElement`), causing TypeScript to fail to infer the element's props. By specifying `React.ReactElement<{ className?: string }>`, we provide the necessary type information for `React.cloneElement` to correctly validate the `className` prop, resolving the type error.
-const roles: { name: NonNullable<UserSettings['userRole']>; label: string; icon: React.ReactElement<{ className?: string }>; }[] = [
+const roles = [
     { name: 'manager', label: 'Manager', icon: <BriefcaseIcon className="w-6 h-6" /> },
     { name: 'technician', label: 'Technician', icon: <WrenchIcon className="w-6 h-6" /> },
 ];
 
 export const RoleSelector: React.FC = () => {
-    const settings = useUserSettings();
-    const currentRole = settings.userRole || 'manager';
+    const { user } = useAuth();
+    const currentRole = user?.role || 'manager';
 
-    const handleSetRole = async (role: NonNullable<UserSettings['userRole']>) => {
-        try {
-            await localDB.userSettings.update(1, { userRole: role });
-        } catch (error) {
-            console.error("Failed to update user role:", error);
-            alert("Could not save the role. Please try again.");
-        }
+    const handleSetRole = async (role: string) => {
+        // TODO: Implement a backend endpoint to update the user's role.
+        // For now, this is a placeholder.
+        alert(`Role switching is not yet implemented. You are currently a ${currentRole}.`);
     };
 
     return (

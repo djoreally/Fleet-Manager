@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserSettings } from '../hooks/useUserSettings';
-import { localDB } from '../services/localDB';
+import { useAuth } from '../contexts/AuthContext';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 
 interface UserSettingsFormProps {
@@ -9,7 +8,7 @@ interface UserSettingsFormProps {
 }
 
 export const UserSettingsForm: React.FC<UserSettingsFormProps> = ({ onSaveSuccess, submitButtonText }) => {
-    const currentSettings = useUserSettings();
+    const { tenant } = useAuth();
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
@@ -17,45 +16,24 @@ export const UserSettingsForm: React.FC<UserSettingsFormProps> = ({ onSaveSucces
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        if (currentSettings) {
-            setName(currentSettings.businessName || '');
-            setAddress(currentSettings.businessAddress || '');
-            setPhone(currentSettings.businessPhone || '');
-            setLogo(currentSettings.logoImage || '');
+        if (tenant) {
+            setName(tenant.name || '');
+            setAddress(tenant.businessAddress || '');
+            setPhone(tenant.businessPhone || '');
+            setLogo(tenant.logoImage || '');
         }
-    }, [currentSettings]);
+    }, [tenant]);
     
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setLogo(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
+        // TODO: Implement image upload to a storage service and update the tenant record.
+        alert("Logo upload is not yet implemented.");
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-        try {
-            await localDB.userSettings.put({
-                ...currentSettings,
-                id: 1,
-                businessName: name,
-                businessAddress: address,
-                businessPhone: phone,
-                logoImage: logo,
-                updatedAt: Date.now(),
-            });
-            onSaveSuccess?.();
-        } catch (error) {
-            console.error("Failed to save settings", error);
-            alert("Failed to save settings.");
-        } finally {
-            setIsSaving(false);
-        }
+        // TODO: Implement a backend endpoint to update tenant settings.
+        alert("Saving business settings is not yet implemented.");
+        onSaveSuccess?.();
     };
 
     return (
