@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { SyncStatus, type Vehicle, type Customer, type Inspector } from "./types";
-import { connectSupabase } from "./services/supabaseClient";
 import { pushToCloud, pullFromCloud, startRealtimeSync } from "./services/syncService";
 import { localDB } from "./services/localDB";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useUserSettings } from "./hooks/useUserSettings";
 
 import { Header } from "./components/Header";
@@ -27,7 +28,23 @@ import { CustomersPage } from "./pages/CustomersPage";
 import { InspectorsPage } from "./pages/InspectorsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ExportPage } from "./pages/ExportPage";
+import { LoginPage } from "./pages/LoginPage";
 
+// Placeholder auth pages
+const SignUpPage = () => <div className="text-white">Sign Up Page</div>;
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner component
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+};
 
 const DEFAULT_CHECKLIST_ITEMS = [
     { name: 'Tire Pressure & Condition' },
@@ -43,11 +60,7 @@ const DEFAULT_CHECKLIST_ITEMS = [
 
 
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(SyncStatus.OFFLINE);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
-  
+  const location = useLocation();
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [viewingInspectionsFor, setViewingInspectionsFor] = useState<Vehicle | null>(null);
   const [inspectingVehicle, setInspectingVehicle] = useState<Vehicle | null>(null);
@@ -121,46 +134,7 @@ function AppContent() {
     };
     seedData();
   }, []);
-  
-  useEffect(() => {
-    // When role changes, navigate to an appropriate default page if the current page is not allowed for the role.
-    const allowedTechnicianPages = ['home', 'fleet', 'inspections', 'settings'];
-    if (userRole === 'technician' && !allowedTechnicianPages.includes(currentPage)) {
-        setCurrentPage('fleet');
-    }
-  }, [userRole, currentPage]);
 
-  useEffect(() => {
-    // Cleanup subscription on component unmount
-    return () => {
-      if (realtimeChannel) {
-        realtimeChannel.unsubscribe();
-      }
-    };
-  }, [realtimeChannel]);
-
-  const handleConnect = async (url: string, key: string) => {
-    setSyncStatus(SyncStatus.CONNECTING);
-    setErrorMessage(null);
-    try {
-      connectSupabase(url, key);
-      
-      // Perform initial sync
-      await pushToCloud();
-      await pullFromCloud();
-      
-      // Start listening for real-time updates
-      const channel = startRealtimeSync();
-      setRealtimeChannel(channel);
-
-      setSyncStatus(SyncStatus.LIVE);
-    } catch (error) {
-      console.error("Connection failed:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      setErrorMessage(`Connection failed: ${message}`);
-      setSyncStatus(SyncStatus.ERROR);
-    }
-  };
 
   const handleSaveVehicle = async (updatedData: Omit<Vehicle, 'id' | 'updatedAt'>) => {
     if (!editingVehicle) return;
@@ -195,100 +169,61 @@ function AppContent() {
     await localDB.customers.put(customerToSave);
   };
 
-  const handleContinueToApp = () => {
-      if (settings.onboardingComplete) {
-        if (userRole === 'technician') {
-            setCurrentPage('fleet');
-        } else {
-            setCurrentPage('dashboard');
-        }
-      } else {
-          setCurrentPage('onboarding');
-      }
-  };
-
-  const handleOnboardingComplete = async () => {
-    await localDB.userSettings.update(1, { onboardingComplete: true, updatedAt: Date.now() });
-    if (userRole === 'technician') {
-        setCurrentPage('fleet');
-    } else {
-        setCurrentPage('dashboard');
-    }
-  };
-
-  const renderPage = () => {
-    switch(currentPage) {
-        case 'home':
-            return <HomePage 
-                        onContinueToApp={handleContinueToApp} 
-                        installPromptEvent={installPromptEvent}
-                        onInstall={handleInstall}
-                    />;
-        case 'onboarding':
-            return <OnboardingPage onComplete={handleOnboardingComplete} />;
-        case 'dashboard':
-            return <DashboardPage onVehicleAddedForInspection={handleVehicleAddedAndStartInspection} />;
-        case 'fleet':
-            return <FleetPage onEditVehicle={setEditingVehicle} onViewInspections={setViewingInspectionsFor} />;
-        case 'inspections':
-            return <InspectionsPage />;
-        case 'checklists':
-            return <ChecklistsPage />;
-        case 'customers':
-            return <CustomersPage onEditCustomer={setEditingCustomer} onCreateCustomer={() => setIsCreatingCustomer(true)} />;
-        case 'inspectors':
-            return <InspectorsPage onEditInspector={setEditingInspector} onCreateInspector={() => setIsCreatingInspector(true)} />;
-        case 'export':
-            return <ExportPage />;
-        case 'settings':
-            return <SettingsPage syncStatus={syncStatus} errorMessage={errorMessage} onConnect={handleConnect} />;
-        default:
-            return <HomePage 
-                        onContinueToApp={handleContinueToApp} 
-                        installPromptEvent={installPromptEvent}
-                        onInstall={handleInstall}
-                    />;
-    }
-  };
+  const AppLayout = ({ children }: { children: React.ReactNode }) => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    return (
+      <>
+        <Navigation
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          userRole={userRole}
+        />
+        <div className="md:pl-60 transition-all duration-300 ease-in-out">
+            <Header onMenuClick={() => setIsSidebarOpen(true)} />
+            <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-surface-glass backdrop-blur-md rounded-xl border border-line/50 p-6">
+                {children}
+              </div>
+            </main>
+        </div>
+        {isSidebarOpen && (
+          <div
+              className="fixed inset-0 bg-background/70 backdrop-blur-sm z-30 md:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-hidden="true"
+          ></div>
+        )}
+      </>
+    )
+  }
   
-  const isInsideApp = currentPage !== 'home' && currentPage !== 'onboarding';
+  const isInsideApp = !['/', '/login', '/signup', '/onboarding'].includes(location.pathname);
 
   return (
     <div className="relative z-10 min-h-screen antialiased">
-      {isInsideApp && (
-          <Navigation 
-            currentPage={currentPage} 
-            setCurrentPage={setCurrentPage}
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-            userRole={userRole}
-          />
-      )}
+      <Routes>
+        <Route path="/" element={<HomePage
+            onContinueToApp={() => {}} // This will be handled by router now
+            installPromptEvent={installPromptEvent}
+            onInstall={handleInstall}
+          />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/onboarding" element={<OnboardingPage onComplete={() => {}} />} />
+
+        <Route path="/dashboard" element={<ProtectedRoute><AppLayout><DashboardPage onVehicleAddedForInspection={handleVehicleAddedAndStartInspection} /></AppLayout></ProtectedRoute>} />
+        <Route path="/fleet" element={<ProtectedRoute><AppLayout><FleetPage onEditVehicle={setEditingVehicle} onViewInspections={setViewingInspectionsFor} /></AppLayout></ProtectedRoute>} />
+        <Route path="/inspections" element={<ProtectedRoute><AppLayout><InspectionsPage /></AppLayout></ProtectedRoute>} />
+        <Route path="/checklists" element={<ProtectedRoute><AppLayout><ChecklistsPage /></AppLayout></ProtectedRoute>} />
+        <Route path="/customers" element={<ProtectedRoute><AppLayout><CustomersPage onEditCustomer={setEditingCustomer} onCreateCustomer={() => setIsCreatingCustomer(true)} /></AppLayout></ProtectedRoute>} />
+        <Route path="/inspectors" element={<ProtectedRoute><AppLayout><InspectorsPage onEditInspector={setEditingInspector} onCreateInspector={() => setIsCreatingInspector(true)} /></AppLayout></ProtectedRoute>} />
+        <Route path="/export" element={<ProtectedRoute><AppLayout><ExportPage /></AppLayout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
       
-      {isInsideApp ? (
-          <div className="md:pl-60 transition-all duration-300 ease-in-out">
-              <Header onMenuClick={() => setIsSidebarOpen(true)} />
-              <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-surface-glass backdrop-blur-md rounded-xl border border-line/50 p-6">
-                  {renderPage()}
-                </div>
-              </main>
-          </div>
-      ) : (
-          <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {renderPage()}
-          </main>
-      )}
-      
-      {/* Backdrop for mobile sidebar */}
-      {isSidebarOpen && isInsideApp && (
-        <div 
-            className="fixed inset-0 bg-background/70 backdrop-blur-sm z-30 md:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-            aria-hidden="true"
-        ></div>
-      )}
-      
+      {/* Modals remain here as they are global */}
       {editingVehicle && (
         <EditVehicleModal 
           vehicle={editingVehicle}
@@ -352,8 +287,12 @@ function AppContent() {
 
 export default function App() {
     return (
-        <ThemeProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
             <AppContent />
-        </ThemeProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     )
 }
