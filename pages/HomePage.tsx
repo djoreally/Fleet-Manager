@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { CarIcon } from '../components/icons/CarIcon';
 import { DownloadIcon } from '../components/icons/DownloadIcon';
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon';
 
 interface HomePageProps {
-  onContinueToApp: () => void;
   installPromptEvent: any;
   onInstall: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onContinueToApp, installPromptEvent, onInstall }) => {
+export const HomePage: React.FC<HomePageProps> = ({ installPromptEvent, onInstall }) => {
   const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const navigate = useNavigate();
+  const settings = useUserSettings();
+  const userRole = settings.userRole || 'manager';
 
   useEffect(() => {
     // Check if the app is running in standalone mode
@@ -18,6 +22,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onContinueToApp, installProm
       setIsAppInstalled(true);
     }
   }, []);
+
+  const handleContinueToApp = () => {
+    if (settings.onboardingComplete) {
+      if (userRole === 'technician') {
+        navigate('/fleet');
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/onboarding');
+    }
+  };
 
   return (
     <div className="text-center flex flex-col items-center justify-center p-8 rounded-lg min-h-[60vh]">
@@ -43,7 +59,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onContinueToApp, installProm
         )}
         
         <button
-          onClick={onContinueToApp}
+          onClick={handleContinueToApp}
           className="flex items-center justify-center gap-3 px-8 py-4 text-lg font-semibold rounded-lg bg-surface hover:bg-line/50 border border-line text-text-secondary transition-colors"
         >
           <span>Continue to App</span>
